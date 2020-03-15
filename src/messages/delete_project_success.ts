@@ -1,0 +1,1 @@
+export default `successfully deleted project!`

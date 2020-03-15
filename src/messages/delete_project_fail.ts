@@ -1,0 +1,1 @@
+export default `failed to delete your project.`

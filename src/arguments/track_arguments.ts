@@ -6,9 +6,9 @@ export class TrackArguments extends ArgumentParser {
   public description: string;
   public due: Date;
 
-  protected parse(args: string[]): void {
+  public parse(args: string[]): void {
     if (args.length != 3) {
-      throw new Error('Wrong amount of arguments passed');
+      throw new Error('Incorrect amount of arguments passed');
     }
 
     this.title = args[0];

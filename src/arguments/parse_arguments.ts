@@ -1,9 +1,13 @@
-export function parseArguments<T>(
-  type: new (args: string[]) => T, 
+import { ArgumentParser } from "./argument_parser";
+
+export function parseArguments<T extends ArgumentParser>(
+  type: new () => T, 
   args: string[]
 ): T {
   try {
-    return new type(args);
+    const obj = new type();
+    obj.parse(args);
+    return obj;
   } catch (e) {
     return null;
   }

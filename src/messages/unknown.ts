@@ -1,1 +1,1 @@
-export default 'Sorry, I don\'t understand your command.';
+export default 'sorry, I don\'t understand your command. Run \`pab help\` to see the full list of commands.';

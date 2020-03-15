@@ -1,0 +1,1 @@
+export default `you have not created a project yet. Run \`pab help\` to see how.`
