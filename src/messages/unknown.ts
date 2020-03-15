@@ -1,0 +1,1 @@
+export default 'Sorry, I don\'t understand your command.';
