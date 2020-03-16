@@ -6,6 +6,7 @@ export interface Project {
   title: string;
   description: string;
   due: string;
+  lastAnnounced: string;
 }
 
 export interface Data {
@@ -33,8 +34,14 @@ class Storage {
     due: Date
   ): void {
     this.ensureServerExists(serverId);
-    this.data.servers[serverId]
-      .push({ owner, channelId, title, description, due: due.toJSON() });
+    this.data.servers[serverId].push({ 
+      owner, 
+      channelId, 
+      title, 
+      description, 
+      due: due.toJSON(), 
+      lastAnnounced: new Date(Date.now()).toJSON(),
+    });
     this.save();
   }
 
@@ -56,9 +63,39 @@ class Storage {
     return true;
   }
 
+  public deleteProjects(projectsToDelete: Project[]): Promise<void> {
+    for (const serverId of this.getServerIds()) {
+      const projects = this.data.servers[serverId];
+      for (const projectToDelete of projectsToDelete) {
+        const index = projects.indexOf(projectToDelete);
+        if (index != -1) {
+          projects.splice(index, 1);
+        }
+      }
+    }
+    return this.save();
+  }
+
   public getProjects(serverId: string, owner: string): Project[] {
     this.ensureServerExists(serverId);
     return this.data.servers[serverId].filter(project => project.owner == owner);
+  }
+
+  public getAllProjects(serverId: string): Project[] {
+    this.ensureServerExists(serverId);
+    return this.data.servers[serverId];
+  }
+
+  public getServerIds(): string[] {
+    return Object.keys(this.data.servers);
+  }
+
+  public updateLastAnnounced(projects: Project[]): Promise<void> {
+    const lastAnnounced = new Date(Date.now()).toJSON();
+    for (const project of projects) {
+      project.lastAnnounced = lastAnnounced;
+    }
+    return this.save();
   }
 
   protected ensureServerExists(serverId: string): void {
@@ -66,7 +103,9 @@ class Storage {
   }
 
   protected async save(): Promise<void> {
-    writeFile('data', JSON.stringify(this.data), () => null);
+    return new Promise<void>((resolve) => {
+      writeFile('data', JSON.stringify(this.data), () => resolve());
+    });
   }
 }
 

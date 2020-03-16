@@ -8,5 +8,6 @@ export default function parseDate(value: string): Date {
   date.setDate(dateValues[0]);
   date.setMonth(dateValues[1] - 1);
   date.setFullYear(dateValues[2]);
+  date.setHours(0, 0, 0);
   return date;
 }
