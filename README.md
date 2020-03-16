@@ -1,15 +1,7 @@
-# 🚀 Welcome to your new awesome project!
+A text file called `token` must be created at the root. It should only contain the application token provided by discord.
 
-This project has been created using **webpack scaffold**, you can now run
-
-```
-npm run build
-```
-
-or
+To start: 
 
 ```
-yarn build
+npm run start
 ```
-
-to bundle your application
