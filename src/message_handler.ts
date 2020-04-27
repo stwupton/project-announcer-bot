@@ -11,6 +11,8 @@ import projectListItem from './messages/project_list_item';
 import { DeleteArguments } from './arguments/delete_arguments';
 import deleteProjectFail from './messages/delete_project_fail';
 import deleteProjectSuccess from './messages/delete_project_success';
+import incorrectTrackArguments from './messages/incorrect_track_arguments';
+import incorrectDeleteArguments from './messages/incorrect_delete_arguments';
 
 type Command = (
   args?: string[], 
@@ -28,7 +30,7 @@ export class MessageHandler {
   };
 
   public handle(message: Message): string {
-    const parsed = parseDiscordCommand(message, ['pab ', 'pablo ']);
+    const parsed = parseDiscordCommand(message, ['pab ', 'pablo ', 'Pab ', 'Pablo ']);
     if (!parsed.success) {
       return;
     }
@@ -54,7 +56,7 @@ export class MessageHandler {
   ): string {
     const deleteArguments = parseArguments(DeleteArguments, args);
     if (!deleteArguments) {
-      return unknownMessage;
+      return incorrectDeleteArguments;
     }
 
     if (!storage.deleteProject(serverId, owner.id, deleteArguments.index)) {
@@ -91,7 +93,7 @@ export class MessageHandler {
   ): string {
     const trackArguments: TrackArguments = parseArguments(TrackArguments, args);
     if (!trackArguments) {
-      return unknownMessage;
+      return incorrectTrackArguments;
     }
 
     const { title, description, due } = trackArguments;
