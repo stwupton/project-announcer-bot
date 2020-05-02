@@ -16,7 +16,6 @@ import incorrectDeleteArguments from './messages/incorrect_delete_arguments';
 import { CompleteArguments } from './arguments/complete_arguments';
 import incorrectCompleteArguments from './messages/incorrect_complete_arguments';
 import completeProjectFail from './messages/complete_project_fail';
-import targetUserMessagePrefix from './messages/target_user_message_prefix';
 import completeProjectSuccess from './messages/complete_project_success';
 
 type Command = (
@@ -66,12 +65,12 @@ export class MessageHandler {
       return incorrectCompleteArguments;
     }
 
-    const { title } = storage.getProjects(serverId, owner.id)[completeArguments.index];
-    if (!storage.deleteProject(serverId, owner.id, completeArguments.index)) {
+    const project = storage.getProjects(serverId, owner.id)[completeArguments.index];
+    if (!project || !storage.deleteProject(serverId, owner.id, completeArguments.index)) {
       return completeProjectFail;
     }
 
-    return targetUserMessagePrefix('everyone', completeProjectSuccess(owner.username, title));
+    return completeProjectSuccess(project.title);
   };
 
   protected delete(
@@ -89,7 +88,7 @@ export class MessageHandler {
       return deleteProjectFail;
     }
 
-    return targetUserMessagePrefix(owner.username, deleteProjectSuccess);
+    return deleteProjectSuccess;
   }
 
   protected help(
@@ -98,7 +97,7 @@ export class MessageHandler {
     channelId: string, 
     owner: User
   ): string {
-    return targetUserMessagePrefix(owner.username, helpMessage);
+    return helpMessage;
   }
 
   protected list(
@@ -114,7 +113,7 @@ export class MessageHandler {
 
     const listOfProjects = projects.reduce<string>(
       (buffer, project, i) => buffer += projectListItem(project, i + 1), '');
-    return targetUserMessagePrefix(owner.username, listOfProjects);
+    return listOfProjects;
   }
 
   protected track(
@@ -130,7 +129,7 @@ export class MessageHandler {
 
     const { title, description, due } = trackArguments;
     storage.addProject(serverId, channelId, owner.id, title, description, due);
-    return targetUserMessagePrefix(owner.username, projectTrackSuccess(title));
+    return projectTrackSuccess(title);
   }
 
   public test(): string {

@@ -1,3 +1,3 @@
-export default function completeProjectSuccess(username: string, title: string): string {
-  return `@${username} completed ${title}! :clap:`;
+export default function completeProjectSuccess(title: string): string {
+  return `congratulations on completing: ${title}! :clap:`;
 }

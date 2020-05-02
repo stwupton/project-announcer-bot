@@ -49,7 +49,7 @@ class Storage {
     const projects = this.data.servers[serverId];
     const userProjects = projects.filter(project => project.owner == owner);
     
-    if (index < 0 || index > userProjects.length) {
+    if (index < 0 || index >= userProjects.length) {
       return false;
     }
 
