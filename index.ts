@@ -16,7 +16,7 @@ client.on('ready', () => {
 client.on('message', (message: Message) => {
   const returnMessage = messageHandler.handle(message);
   if (returnMessage) {
-    message.reply(returnMessage);
+    message.channel.send(returnMessage, { disableMentions: 'none' });
   }
 });
 
