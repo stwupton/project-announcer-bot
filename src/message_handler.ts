@@ -13,6 +13,10 @@ import deleteProjectFail from './messages/delete_project_fail';
 import deleteProjectSuccess from './messages/delete_project_success';
 import incorrectTrackArguments from './messages/incorrect_track_arguments';
 import incorrectDeleteArguments from './messages/incorrect_delete_arguments';
+import { CompleteArguments } from './arguments/complete_arguments';
+import incorrectCompleteArguments from './messages/incorrect_complete_arguments';
+import completeProjectFail from './messages/complete_project_fail';
+import completeProjectSuccess from './messages/complete_project_success';
 
 type Command = (
   args?: string[], 
@@ -23,10 +27,12 @@ type Command = (
 
 export class MessageHandler {
   protected commands: { [name: string]: Command } = {
+    complete: this.complete,
     delete: this.delete,
     help: this.help,
     list: this.list,
     track: this.track,
+    test: this.test
   };
 
   public handle(message: Message): string {
@@ -48,6 +54,25 @@ export class MessageHandler {
     );
   }
 
+  protected complete(
+    args: string[], 
+    serverId: string, 
+    channelId: string, 
+    owner: User
+  ): string {
+    const completeArguments = parseArguments(CompleteArguments, args);
+    if (!completeArguments) {
+      return incorrectCompleteArguments;
+    }
+
+    const project = storage.getProjects(serverId, owner.id)[completeArguments.index];
+    if (!project || !storage.deleteProject(serverId, owner.id, completeArguments.index)) {
+      return completeProjectFail;
+    }
+
+    return completeProjectSuccess(project.title);
+  };
+
   protected delete(
     args: string[], 
     serverId: string, 
@@ -66,7 +91,12 @@ export class MessageHandler {
     return deleteProjectSuccess;
   }
 
-  protected help(): string {
+  protected help(
+    args: string[], 
+    serverId: string, 
+    channelId: string, 
+    owner: User
+  ): string {
     return helpMessage;
   }
 
@@ -81,8 +111,9 @@ export class MessageHandler {
       return noProjectsMessage;
     }
 
-    return projects.reduce<string>(
+    const listOfProjects = projects.reduce<string>(
       (buffer, project, i) => buffer += projectListItem(project, i + 1), '');
+    return listOfProjects;
   }
 
   protected track(
@@ -98,7 +129,10 @@ export class MessageHandler {
 
     const { title, description, due } = trackArguments;
     storage.addProject(serverId, channelId, owner.id, title, description, due);
-
     return projectTrackSuccess(title);
+  }
+
+  public test(): string {
+    return 'https://giphy.com/gifs/climate-crisis-greta-thunberg-un-action-summit-U1aN4HTfJ2SmgB2BBK';
   }
 }
