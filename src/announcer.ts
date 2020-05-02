@@ -1,31 +1,44 @@
 import { Client, TextChannel, User } from "discord.js";
 import storage, { Project } from "./storage";
 import reminderMessage from "./messages/reminder";
+import overdueMessage from "./messages/overdue";
 
 export class Announcer {
+  protected readonly reminders: { days: number, when: string }[] = [
+    { days: 0, when: 'today' },
+    { days: 1, when: 'tommorow' },
+    { days: 7, when: 'in one week' },
+    { days: 14, when: 'in two weeks' },
+  ];
+
   constructor(protected client: Client) {}
 
   public start(): void {
     setTimeout(() => {
-      this.sendAnnouncementMessages();
-      this.start();
+      this.sendAnnouncementMessages().then(() => {
+        this.start();
+      });
     }, this.getReminderCheckTimeoutDuration());
   }
 
-  protected getAnnouncementWhenMessage(due: Date, lastAnnounced: Date): string | null {
-    const reminders: { days: number, when: string }[] = [
-      { days: 0, when: 'today' },
-      { days: 1, when: 'tommorow' },
-      { days: 7, when: 'in one week' },
-      { days: 14, when: 'in two weeks' },
-    ];
-    
-    for (const reminder of reminders) {
+  protected getAnnouncementMessage(project: Project): string | null {
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const now = new Date(Date.now());
+    const due = new Date(project.due);
+
+    const differenceInDays = Math.floor((now.getTime() - due.getTime()) / msPerDay);
+    if (differenceInDays > 0) {
+      return overdueMessage(project.title, differenceInDays);
+    }
+
+    const lastAnnounced = storage.getLastAnnounced();
+    for (const reminder of this.reminders) {
       const remindAt = new Date(due);
       remindAt.setDate(due.getDate() - reminder.days);
 
-      if (this.shouldAnnounce(remindAt, lastAnnounced)) {
-        return reminder.when;
+      const shouldAnnounce = now >= remindAt && remindAt > lastAnnounced;
+      if (shouldAnnounce) {
+        return reminderMessage(project.title, reminder.when);
       }
     }
 
@@ -34,57 +47,47 @@ export class Announcer {
 
   protected getReminderCheckTimeoutDuration(): number {
     const now = new Date(Date.now());
-    const checkTime = new Date(now);
-    checkTime.setHours(10, 0, 0, 0);
+    const lastAnnounced = storage.getLastAnnounced();
 
-    if (now > checkTime) {
-      checkTime.setDate(checkTime.getDate() + 1);
+    let announceTime = new Date(now);
+    announceTime.setHours(10, 0, 0, 0);
+
+    const overAnnounceTime = now.getTime() >= announceTime.getTime();
+    const wasAnnouncedToday = 
+      now.getDate() == lastAnnounced.getDate() && 
+      now.getMonth() == lastAnnounced.getMonth() && 
+      now.getFullYear() == lastAnnounced.getFullYear();
+
+    if (overAnnounceTime) {
+      if (!wasAnnouncedToday) {
+        announceTime = new Date(now);
+      } else {
+        announceTime.setDate(announceTime.getDate() + 1);
+      }
     }
 
-    return checkTime.getTime() - now.getTime();
+    return announceTime.getTime() - now.getTime();
   }
 
   protected async sendAnnouncementMessages(): Promise<void> {
-    const updatedProjects: Project[] = [];
-    const projectsToDelete: Project[] = [];
-
     for (const serverId of storage.getServerIds()) {
       for (const project of storage.getAllProjects(serverId)) {
-        const due = new Date(project.due);
-        const lastAnnounced = new Date(project.lastAnnounced);
-
-        const when = this.getAnnouncementWhenMessage(due, lastAnnounced);
-        if (!when) continue;
+        const message = this.getAnnouncementMessage(project);
+        if (!message) continue;
 
         try {
           const channel = await this.client
             .guilds.resolve(serverId)
             .channels.resolve(project.channelId)
             .fetch() as TextChannel;
-          await channel.send(
-            reminderMessage(project.title, when), 
-            { reply: project.owner }
-          );
+          await channel.send(message, { reply: project.owner });
         } catch (e) {
           console.info('Failed to send reminder to user', e);
           continue;
         }
-
-        const shouldDeleteProject = Date.now() >= due.getTime();
-        if (shouldDeleteProject) {
-          projectsToDelete.push(project);
-        } else {
-          updatedProjects.push(project);
-        }
       }
     }
 
-    await storage.deleteProjects(projectsToDelete);
-    await storage.updateLastAnnounced(updatedProjects);
-  }
-
-  protected shouldAnnounce(remindAt: Date, lastAnnounced: Date): boolean {
-    const now = new Date(Date.now());
-    return now >= remindAt && remindAt > lastAnnounced;
+    await storage.updateLastAnnounced();
   }
 }

@@ -6,10 +6,10 @@ export interface Project {
   title: string;
   description: string;
   due: string;
-  lastAnnounced: string;
 }
 
 export interface Data {
+  lastAnnounced: string;
   servers: { [serverId: string]: Project[] };
 }
 
@@ -20,8 +20,8 @@ class Storage {
     if (existsSync('data')) {
       const jsonData = readFileSync('data').toString();
       this.data = JSON.parse(jsonData) as Data;
-    } else  {
-      this.data = { servers: {} };
+    } else {
+      this.data = { servers: {}, lastAnnounced: null };
     }
   }
 
@@ -40,7 +40,6 @@ class Storage {
       title, 
       description, 
       due: due.toJSON(), 
-      lastAnnounced: new Date(Date.now()).toJSON(),
     });
     this.save();
   }
@@ -63,17 +62,8 @@ class Storage {
     return true;
   }
 
-  public deleteProjects(projectsToDelete: Project[]): Promise<void> {
-    for (const serverId of this.getServerIds()) {
-      const projects = this.data.servers[serverId];
-      for (const projectToDelete of projectsToDelete) {
-        const index = projects.indexOf(projectToDelete);
-        if (index != -1) {
-          projects.splice(index, 1);
-        }
-      }
-    }
-    return this.save();
+  public getLastAnnounced(): Date {
+    return new Date(this.data.lastAnnounced || null);
   }
 
   public getProjects(serverId: string, owner: string): Project[] {
@@ -90,11 +80,8 @@ class Storage {
     return Object.keys(this.data.servers);
   }
 
-  public updateLastAnnounced(projects: Project[]): Promise<void> {
-    const lastAnnounced = new Date(Date.now()).toJSON();
-    for (const project of projects) {
-      project.lastAnnounced = lastAnnounced;
-    }
+  public updateLastAnnounced(): Promise<void> {
+    this.data.lastAnnounced = new Date(Date.now()).toJSON();
     return this.save();
   }
 
